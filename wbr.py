@@ -12,7 +12,7 @@ from selenium.common.exceptions import NoAlertPresentException, TimeoutException
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-API_KEY = "DEEPINFRA_KEY"
+API_KEY = "DEEPINFRA_API_KEY"
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}"
 }
@@ -70,16 +70,17 @@ def play_game():
     driver = setup_webdriver()
     driver.get("https://www.whatbeatsrock.com")
 
+    last_response = None
+    current_word = None
+
     try:
         while True:
-            successful_beats = 0  # Reset counter for each new game session
             wait = WebDriverWait(driver, 15)
 
+            # Main game loop
             while True:
-                if handle_alert(driver):
-                    continue
-
                 try:
+                    # Fetch the word displayed in the game
                     word_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "p.text-2xl.text-center")))
                     word_html = word_element.get_attribute("outerHTML")
                     logging.info(f"Raw Element HTML: {word_html}")
@@ -89,50 +90,72 @@ def play_game():
                         logging.error("No valid word found to play with! Ending this game.")
                         break
 
-                    word = match.group(1).strip()
-                    question = f"What beats {word}?"
+                    current_word = match.group(1).strip()
+                    # Prepare the initial question
+                    question = f"What beats {current_word}?"
+                    if last_response:
+                        question += f" Don't use {last_response}."
+
                     logging.info(f"Question: {question}")
 
+                    # Query the AI with the prepared question
                     ai_response = query_ai(question)
                     if not ai_response:
                         logging.error("AI Response was None, ending this game.")
                         break
 
                     logging.info(f"AI Response: {ai_response}")
+                    last_response = ai_response  # Store the last response
 
+                    # Input AI response into the form and submit
                     input_element = driver.find_element(By.CSS_SELECTOR, "input.pl-4")
                     input_element.clear()
                     input_element.send_keys(ai_response)
                     submit_button = driver.find_element(By.CSS_SELECTOR, "button.p-4")
                     submit_button.click()
 
-                    result = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "p.pb-2"))).text
-                    logging.info(f"Result: {result}")
-
-                    # Debugging: Log result checking
-                    if "beats" in result.lower():
-                        successful_beats += 1
-                        logging.info(f"Incrementing successful_beats: {successful_beats}")
-
+                    # Handle alert if present
                     try:
-                        next_button = driver.find_element(By.CSS_SELECTOR, "button.py-4")
-                        next_button.click()
-                    except NoSuchElementException:
-                        logging.info("No 'Next' button found, attempting to click 'Play Again'.")
+                        alert = WebDriverWait(driver, 3).until(EC.alert_is_present())
+                        alert_text = alert.text.lower()
+                        logging.info(f"Alert Detected: {alert_text}")
+                        alert.accept()
+
+                        if "no repeats" in alert_text:
+                            # Use modified question for AI if "no repeats" alert is detected
+                            continue  # Retry with modified prompt
+
+                    except TimeoutException:
+                        # If no alert, continue with checking result
+                        pass
+
+                    # Check result and move to the next round
+                    try:
+                        result_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "p.pb-2")))
+                        result_text = result_element.text
+                        logging.info(f"Result: {result_text}")
+
+                        # Reset last_response if successful
+                        last_response = None
+
+                        # Click next button
                         try:
+                            next_button = driver.find_element(By.CSS_SELECTOR, "button.py-4")
+                            next_button.click()
+                        except NoSuchElementException:
+                            logging.info("No 'Next' button found, attempting to click 'Play Again'.")
                             play_again_button = driver.find_element(By.CSS_SELECTOR, "button.px-4")
                             play_again_button.click()
                             time.sleep(2)
                             break
-                        except NoSuchElementException:
-                            logging.error("No 'Play Again' button found. Ending game.")
-                            break
+
+                    except NoSuchElementException:
+                        logging.error("No result element found, breaking loop.")
+                        break
 
                 except Exception as e:
-                    logging.error(f"Exception occurred: {e}")
+                    logging.error(f"Exception: {e}")
                     break
-
-            logging.info(f"Total Successful Beats for this game: {successful_beats}")
 
     finally:
         driver.quit()
