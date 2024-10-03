@@ -12,7 +12,7 @@ from selenium.common.exceptions import NoAlertPresentException, TimeoutException
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-API_KEY = "aEVlm9wY7oqHRq7P0fypxmep6nyRjFlZ"
+API_KEY = "DEEPINFRA_KEY"
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}"
 }
