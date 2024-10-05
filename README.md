@@ -1,7 +1,5 @@
 # wbr-ai
-
 What Beats Rock? (whatbeatsrock.com) but controlled by AI
-
 ## Setup
 1. install chromedriver for selenium in your PATH
 2. install requests, logging, selenium using pip
@@ -9,3 +7,5 @@ What Beats Rock? (whatbeatsrock.com) but controlled by AI
 4. get the deepinfra "auto" api key and copy it
 5. put the key into the code (line 15)
 6. run
+## Output
+[![Video](https://img.youtube.com/vi/rB8jW_axh7c/maxresdefault.jpg)](https://www.youtube.com/watch?v=rB8jW_axh7c)
