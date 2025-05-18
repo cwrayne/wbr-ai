@@ -1,7 +1,7 @@
 # wbr-ai
 What Beats Rock? (whatbeatsrock.com) but controlled by AI - literally an AI game played by an AI
 ## Setup
-1. install chromedriver for selenium in your PATH
+1. install chrome for testing for selenium in your PATH
 2. install requests, logging, selenium using pip
 3. make a deepinfra account and put some money into it.
 4. get the deepinfra "auto" api key and copy it
